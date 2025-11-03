@@ -1,60 +1,69 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace PZ_4
 {
+    /// <summary>
+    /// Класс для анализа текста
+    /// </summary>
     public class TextAnalyzer
     {
-        public TextStats AnalyzeText(string text)
+        private static readonly char[] _wordSeparators = new[] { ' ', '\t', '\n', '\r' };
+
+        /// <summary>
+        /// Анализирует текст и возвращает статистику
+        /// </summary>
+        public TextStatistics Analyze(string text)
         {
-            var stats = new TextStats();
-
-            string[] words = text.Split(new char[] { ' ', '\t', '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-            stats.wc = words.Length;
-
-            string longest = "";
-            foreach (string word in words)
+            if (string.IsNullOrWhiteSpace(text))
             {
-                if (word.Length > longest.Length)
-                {
-                    longest = word;
-                }
+                return new TextStatistics();
             }
-            stats.lw = longest;
 
-            Dictionary<char, int> freq = new Dictionary<char, int>();
-            foreach (char c in text)
+            return new TextStatistics
             {
-                if (char.IsLetterOrDigit(c))
-                {
-                    char lowerC = char.ToLower(c);
-                    if (freq.ContainsKey(lowerC))
-                    {
-                        freq[lowerC]++;
-                    }
-                    else
-                    {
-                        freq[lowerC] = 1;
-                    }
-                }
-            }
-            stats.cf = freq;
-
-            return stats;
+                WordCount = CountWords(text),
+                LongestWord = FindLongestWord(text),
+                CharacterFrequency = CalculateCharacterFrequency(text)
+            };
         }
 
-        public void ProcessAndDisplay(string input)
+        private int CountWords(string text)
         {
-            var result = AnalyzeText(input);
+            return text.Split(_wordSeparators, StringSplitOptions.RemoveEmptyEntries).Length;
+        }
 
-            Console.WriteLine($"Количество слов: {result.wc}");
-            Console.WriteLine($"Самое длинное слово: {result.lw}");
+        private string FindLongestWord(string text)
+        {
+            var words = text.Split(_wordSeparators, StringSplitOptions.RemoveEmptyEntries);
+            return words.OrderByDescending(word => word.Length).FirstOrDefault() ?? string.Empty;
+        }
+
+        private Dictionary<char, int> CalculateCharacterFrequency(string text)
+        {
+            return text.Where(char.IsLetterOrDigit)
+                      .Select(char.ToLower)
+                      .GroupBy(c => c)
+                      .ToDictionary(group => group.Key, group => group.Count());
+        }
+
+        /// <summary>
+        /// Отображает результаты анализа в консоли
+        /// </summary>
+        public void DisplayResults(TextStatistics statistics)
+        {
+            if (statistics == null)
+            {
+                Console.WriteLine("Статистика недоступна.");
+                return;
+            }
+
+            Console.WriteLine($"Количество слов: {statistics.WordCount}");
+            Console.WriteLine($"Самое длинное слово: {statistics.LongestWord}");
             Console.WriteLine("Частота символов:");
 
-            foreach (var pair in result.cf.OrderByDescending(x => x.Value))
+            foreach (var pair in statistics.CharacterFrequency.OrderByDescending(x => x.Value))
             {
                 Console.WriteLine($"{pair.Key}: {pair.Value}");
             }

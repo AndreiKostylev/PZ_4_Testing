@@ -1,11 +1,12 @@
-﻿using PZ_4;
+﻿using System;
+using PZ_4;
 
 namespace Client
 {
     internal class Program
     {
-        static TextAnalyzer analyzer = new TextAnalyzer();
-        static TextFormatter formatter = new TextFormatter();
+        private static TextAnalyzer _analyzer = new TextAnalyzer();
+        private static TextFormatter _formatter = new TextFormatter();
 
         static void Main(string[] args)
         {
@@ -27,9 +28,10 @@ namespace Client
                         break;
                     case "3":
                         running = false;
+                        Console.WriteLine("Выход из программы...");
                         break;
                     default:
-                        Console.WriteLine("Некорректный выбор!");
+                        Console.WriteLine("Некорректный выбор! Попробуйте снова.");
                         break;
                 }
             }
@@ -37,48 +39,74 @@ namespace Client
 
         static void ShowMenu()
         {
-            Console.WriteLine("\n1. Анализ текста");
+            Console.WriteLine("\nВыберите действие:");
+            Console.WriteLine("1. Анализ текста");
             Console.WriteLine("2. Форматирование текста");
             Console.WriteLine("3. Выход");
-            Console.Write("Выбор: ");
+            Console.Write("Ваш выбор: ");
         }
 
         static void AnalyzeText()
         {
-            Console.Write("Введите текст: ");
+            Console.Write("Введите текст для анализа: ");
             string text = Console.ReadLine();
 
-            analyzer.ProcessAndDisplay(text);
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Console.WriteLine("Текст не может быть пустым!");
+                return;
+            }
+
+            var statistics = _analyzer.Analyze(text);
+            _analyzer.DisplayResults(statistics);
         }
 
         static void FormatText()
         {
-            Console.Write("Введите текст: ");
+            Console.Write("Введите текст для форматирования: ");
             string text = Console.ReadLine();
 
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                Console.WriteLine("Текст не может быть пустым!");
+                return;
+            }
+
+            var options = new FormatOptions();
+
             Console.Write("Удалить лишние пробелы? (y/n): ");
-            bool removeSpaces = Console.ReadLine().ToLower() == "y";
+            options.RemoveExtraSpaces = Console.ReadLine().ToLower() == "y";
 
             Console.Write("В верхний регистр? (y/n): ");
-            bool toUpper = Console.ReadLine().ToLower() == "y";
+            options.ConvertToUpper = Console.ReadLine().ToLower() == "y";
 
             Console.Write("Выровнять текст по ширине? (y/n): ");
-            bool justify = Console.ReadLine().ToLower() == "y";
+            options.JustifyText = Console.ReadLine().ToLower() == "y";
 
-            int width = 80;
-            if (justify)
+            if (options.JustifyText)
             {
-                Console.Write("Ширина линии (по умолчанию 80): ");
+                Console.Write($"Ширина линии (по умолчанию {TextFormatter.DefaultLineWidth}): ");
                 string widthInput = Console.ReadLine();
+
                 if (!string.IsNullOrEmpty(widthInput))
                 {
-                    width = int.Parse(widthInput); 
+                    if (int.TryParse(widthInput, out int customWidth) && customWidth > 0)
+                    {
+                        options.LineWidth = customWidth;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Некорректная ширина. Используется значение по умолчанию: {TextFormatter.DefaultLineWidth}");
+                        options.LineWidth = TextFormatter.DefaultLineWidth;
+                    }
                 }
             }
 
-            string formatted = formatter.FormatText(text, removeSpaces, toUpper, justify, width);
-            Console.WriteLine("Форматированный текст:");
-            Console.WriteLine(formatted);
+            string formattedText = _formatter.FormatText(text, options);
+            Console.WriteLine("\nФорматированный текст:");
+            Console.WriteLine("======================");
+            Console.WriteLine(formattedText);
+            Console.WriteLine("======================");
         }
     }
 }
